@@ -1,4 +1,3 @@
-
 window.SITE_CONFIG = {
-  formspreeEndpoint: ""
+  formspreeEndpoint: "https://formspree.io/f/xgaaavla"
 };
