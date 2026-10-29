@@ -108,15 +108,19 @@
 
   function collect(form) {
     var data = new FormData();
+    var name = "";
     Array.prototype.forEach.call(form.querySelectorAll(".gfield"), function (field) {
       var input = field.querySelector("input:not([type=hidden]), select, textarea");
       if (!input || !input.name) return;
-      var key = input.type === "email" ? "email" : (fieldLabel(field) || input.name);
+      var isEmail = input.type === "email";
+      var label = fieldLabel(field).replace(/\s*\(?\s*required\s*\)?\s*$/i, "").trim();
+      var key = isEmail ? "email" : (label || input.name);
       var value = input.tagName === "TEXTAREA" ? String(input.value || "").trim() : clean(input.value);
+      if (!name && !isEmail && input.type === "text" && value) name = value;
       data.append(key, value);
     });
-    data.append("Sent from page", document.title + " - " + location.href.split("#")[0]);
-    data.append("_subject", "New appointment request from the website");
+    data.append("Page", document.title + " - " + location.href.split("#")[0]);
+    data.append("_subject", name ? "New appointment request from " + name : "New appointment request from the website");
     return data;
   }
 
@@ -185,6 +189,10 @@
     fetch(url, { method: "POST", body: collect(form), headers: { "Accept": "application/json" } })
       .then(function (res) {
         if (!res.ok) throw new Error("status " + res.status);
+        return res.json().catch(function () { return {}; });
+      })
+      .then(function (json) {
+        if (json && (json.success === false || json.success === "false")) throw new Error(json.message || "failed");
         showThanks(wrapper, formId);
       })
       .catch(function () {
